@@ -19,6 +19,19 @@ import javax.servlet.http.*;
  */
 public class AdminController extends HttpServlet {
 
+    public List<Object[]> getMembersList(jdbcDriver JDBC)
+    {
+        List<Object[]> members = null;
+        
+        try {
+            members = JDBC.retrieve("MEMBERS");
+        } catch (SQLException ex) {
+            System.err.println(ex);
+        }
+        
+        return members;
+    }
+    
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
      * methods.
@@ -31,19 +44,17 @@ public class AdminController extends HttpServlet {
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException
     {
-        jdbcDriver JDBC = null;
+        /* ----- DEBUGGING-start ----- */
         try {
-            System.out.println("AdminController> Creating jdbcDriver...");
+            jdbcDriver JDBC = null;
             JDBC = new jdbcDriver("jdbc:derby://localhost:1527/xyzdrivers", "root", "root");
-        
-            System.out.println("AdminController> Fetching members...");
-            List<Object[]> members = JDBC.retrieve("MEMBERS");
-            System.out.println("AdminController> "+Arrays.toString(members.get(0)));
-            System.out.println("AdminController> "+Arrays.toString(members.get(1)));
+            List<Object[]> members = getMembersList(JDBC);
+            System.out.println(members.get(0)[2]);
         } catch (SQLException | ClassNotFoundException ex) {
             System.out.println("EXCEPTION: ");
             System.out.println(ex);
         }
+        /* ----- DEBUGGING-end ----- */
     }
 
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
@@ -84,5 +95,4 @@ public class AdminController extends HttpServlet {
     public String getServletInfo() {
         return "Short description";
     }// </editor-fold>
-
 }
