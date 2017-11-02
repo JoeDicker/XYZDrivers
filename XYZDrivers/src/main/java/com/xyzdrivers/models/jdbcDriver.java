@@ -197,11 +197,11 @@ public class jdbcDriver
      * @return
      * @throws SQLException 
      */
-    public List<List<Object>> retrieve(String table)
+    public List<Object[]> retrieve(String table)
             throws SQLException
     {
-        List<List<Object>> data;
-        List<Object> column;
+        List<Object[]> data;
+        Object[] column;
         
         //check table and table->column exist
         if (!exists(table))
@@ -212,12 +212,13 @@ public class jdbcDriver
         results = statement.executeQuery();
         resultsMetaData = results.getMetaData();
         //add results to data
-        data = new ArrayList<List<Object>>();   //table (nested list = column)
-        column = new ArrayList<Object>();
+        int columnCount = resultsMetaData.getColumnCount();
+        data = new ArrayList<>();
         for (int row = 0; results.next(); row++)
-        {
-            for (int col = 1; col < resultsMetaData.getColumnCount(); col++)
-                column.add(results.getObject(col));
+        {   
+            column = new Object[columnCount];
+            for (int col = 1; col < columnCount; col++)
+                column[col-1] = results.getObject(col);
             
             data.add(column);
         }
