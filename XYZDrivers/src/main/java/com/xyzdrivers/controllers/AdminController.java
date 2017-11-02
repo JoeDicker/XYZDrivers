@@ -5,12 +5,13 @@
  */
 package com.xyzdrivers.controllers;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import com.xyzdrivers.models.*;
+
+import java.io.*;
+import java.sql.*;
+import java.util.*;
+import javax.servlet.*;
+import javax.servlet.http.*;
 
 /**
  *
@@ -18,6 +19,19 @@ import javax.servlet.http.HttpServletResponse;
  */
 public class AdminController extends HttpServlet {
 
+    public List<Object[]> getMembersList(jdbcDriver JDBC)
+    {
+        List<Object[]> members = null;
+        
+        try {
+            members = JDBC.retrieve("MEMBERS");
+        } catch (SQLException ex) {
+            System.err.println(ex);
+        }
+        
+        return members;
+    }
+    
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
      * methods.
@@ -28,20 +42,19 @@ public class AdminController extends HttpServlet {
      * @throws IOException if an I/O error occurs
      */
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        response.setContentType("text/html;charset=UTF-8");
-        try (PrintWriter out = response.getWriter()) {
-            /* TODO output your page here. You may use following sample code. */
-            out.println("<!DOCTYPE html>");
-            out.println("<html>");
-            out.println("<head>");
-            out.println("<title>Servlet AdminController</title>");            
-            out.println("</head>");
-            out.println("<body>");
-            out.println("<h1>Servlet AdminController at " + request.getContextPath() + "</h1>");
-            out.println("</body>");
-            out.println("</html>");
+            throws ServletException, IOException
+    {
+        /* ----- DEBUGGING-start ----- */
+        try {
+            jdbcDriver JDBC = null;
+            JDBC = new jdbcDriver("jdbc:derby://localhost:1527/xyzdrivers", "root", "root");
+            List<Object[]> members = getMembersList(JDBC);
+            System.out.println(members.get(0)[2]);
+        } catch (SQLException | ClassNotFoundException ex) {
+            System.out.println("EXCEPTION: ");
+            System.out.println(ex);
         }
+        /* ----- DEBUGGING-end ----- */
     }
 
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
@@ -82,5 +95,4 @@ public class AdminController extends HttpServlet {
     public String getServletInfo() {
         return "Short description";
     }// </editor-fold>
-
 }
