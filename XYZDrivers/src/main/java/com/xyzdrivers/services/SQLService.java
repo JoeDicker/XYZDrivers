@@ -2,10 +2,11 @@
  * @file    jdbcDriver.java
  * @author  alexander collins
  * @created 02/11/2017
- * @notes   - Feel free to fix any stupid mistakes
- *          - The private functions could probably be made public.
- *          - Haven't tested it since creating it
- * @issues  1. getPrimaryKeyName() doesn't work, any function using it won't work.
+ * @updated 03/11/2017, alexander collins
+ * @notes   - The private functions could probably be made public.
+ *          - Not tested
+ * @issues  line 71. getPrimaryKeyName() doesn't work, any function using it won't work either.
+ *          needs testing.
  */
 package com.xyzdrivers.services;
 
@@ -40,13 +41,44 @@ public class SQLService
         DBMetaData = DB.getMetaData();
     }
     
-//public methods
-    private void close() throws SQLException
+//private methods
+    private ResultSet executeQueryStatement(String sql, Object... parameters)
+            throws SQLException
     {
-        results.close();
-        statement.close();
-        DB.close();
+        //prepare statement
+        statement = DB.prepareStatement(sql);
+        for (int i = 0; i < parameters.length; i++)
+            statement.setObject(i + 1, parameters[i]);
+        
+        //execute statement
+        return statement.executeQuery();
     }
+    
+    private int executeUpdateStatement(String sql, Object... parameters)
+            throws SQLException
+    {
+        //prepare statement
+        statement = DB.prepareStatement(sql);
+        for (int i = 0; i < parameters.length; i++)
+            statement.setObject(i + 1, parameters[i]);
+        
+        //execute statement
+        return statement.executeUpdate();
+    }
+    
+    /**
+     * @ISSUE NOT WORKING
+     */
+    private String getPrimaryKeyName(String table) throws SQLException
+    {
+        results = DBMetaData.getPrimaryKeys("", "", table);
+        
+        if (!results.next())
+            throw new IllegalArgumentException("Could not find PRIMARY KEY in "+table+". Please specify the primaryKeyColumn.");
+        
+        return results.getString("PK_NAME");
+    }
+    
     private List<String> getAllTableNames() throws SQLException
     {
         List<String> tableNames = new ArrayList();
@@ -59,14 +91,12 @@ public class SQLService
         System.out.println(tableNames.toString());
         return tableNames;
     }
+    
     private List<String> getAllColumnNames(String tableName) throws SQLException
     {
         List<String> columnNames = new ArrayList();
         
-        statement = DB.prepareStatement("SELECT * FROM "+tableName+" FETCH FIRST 1 ROWS ONLY");
-        results = statement.executeQuery();
-        
-        //results = statement.executeQuery("SELECT * FROM "+tableName);
+        results = executeQueryStatement("SELECT * FROM "+tableName+" FETCH FIRST 1 ROWS ONLY");
         
         resultsMetaData = results.getMetaData();
         for (int i = 1; i < resultsMetaData.getColumnCount(); i++)
@@ -74,16 +104,16 @@ public class SQLService
         
         return columnNames;
     }
-    private String getPrimaryKeyName(String table) throws SQLException
+    
+    private void close() throws SQLException
     {
-        results = DBMetaData.getPrimaryKeys("", "", table);
-        
-        if (!results.next())
-            throw new IllegalArgumentException("Could not find PRIMARY KEY in "+table+". Please specify the primaryKeyColumn.");
-        
-        return results.getString("PK_NAME");
+        results.close();
+        statement.close();
+        DB.close();
     }
-//exists
+    
+//public methods
+    //<editor-fold defaultstate="collapsed" desc="exists() functions...">
     /**
      * Checks if <code>table</code> exists.
      * 
@@ -96,10 +126,8 @@ public class SQLService
     public boolean exists(String table)
             throws SQLException
     {
-        //prepare statement
-        statement = DB.prepareStatement("SELECT * FROM "+table);
         //execute statement
-        results = statement.executeQuery();
+        results = executeQueryStatement("SELECT * FROM "+table);
         //return results
         return results.next();
     }
@@ -117,10 +145,8 @@ public class SQLService
     public boolean exists(String table, String column)
             throws SQLException
     {
-        //prepare statement
-        statement = DB.prepareStatement("SELECT "+column+" FROM "+table+" WHERE "+column+" = ?");
         //execute statement
-        results = statement.executeQuery();
+        results = executeQueryStatement("SELECT "+column+" FROM "+table+" WHERE "+column+" = ?");
         //return results
         return results.next();
     }
@@ -139,15 +165,14 @@ public class SQLService
     public boolean exists(String table, String column, Object item)
             throws SQLException
     {
-        //prepare statement
-        statement = DB.prepareStatement("SELECT "+column+" FROM "+table+" WHERE "+column+" = ?");
-        statement.setObject(1, item);
         //execute statement
-        results = statement.executeQuery();
+        results = executeQueryStatement("SELECT "+column+" FROM "+table+" WHERE "+column+" = ?", item);
         //return results
         return results.next();
     }
-//retrieve
+    //</editor-fold>
+
+    //<editor-fold defaultstate="collapsed" desc="retrieve() functions...">
     /**
      * 
      * @param table
@@ -163,10 +188,8 @@ public class SQLService
         //check table and table->column exist
         if (!exists(table))
             throw new IllegalArgumentException();
-        //prepare statement
-        statement = DB.prepareStatement("SELECT * FROM "+table);
-        //execute statement
-        results = statement.executeQuery();
+        //execute SQL statement
+        results = executeQueryStatement("SELECT * FROM "+table);
         resultsMetaData = results.getMetaData();
         //add results to data
         int columnCount = resultsMetaData.getColumnCount();
@@ -182,6 +205,7 @@ public class SQLService
         //return results
         return data;
     }
+    
     /**
      * Retrieve a <code>Collection</code> of all items in <code>table->column</code>
      * 
@@ -200,10 +224,8 @@ public class SQLService
         //check table and table->column exist
         if (!exists(table, column))
             throw new IllegalArgumentException();
-        //prepare statement
-        statement = DB.prepareStatement("SELECT "+column+" FROM "+table);
         //execute statement
-        results = statement.executeQuery();
+        results = executeQueryStatement("SELECT "+column+" FROM "+table);
         //add results to data
         data = new ArrayList();
         for (int i = 0; results.next(); i++)
@@ -211,6 +233,7 @@ public class SQLService
         //return results
         return data;
     }
+    
     /**
      * Retrieve an item from <code>table->column</code>, where the PRIMARY KEY
      * is <code>primaryKey</code>.
@@ -227,11 +250,8 @@ public class SQLService
     public Object retrieve(String table, String column, Object primaryKey)
             throws SQLException, IllegalArgumentException
     {
-        //prepare statement
-        statement = DB.prepareStatement("SELECT "+column+" FROM "+table+" WHERE "+getPrimaryKeyName(table)+" = ?");
-        statement.setObject(1, primaryKey);
         //execute statement
-        results = statement.executeQuery();
+        results = executeQueryStatement("SELECT "+column+" FROM "+table+" WHERE "+getPrimaryKeyName(table)+" = ?", primaryKey);
         
         //return results
         if (results.next())
@@ -239,6 +259,7 @@ public class SQLService
         else
             throw new IllegalArgumentException();
     }
+    
     /**
      * Retrieve an item from <code>table->column</code>, where the PRIMARY KEY
      * is <code>primaryKey</code>.
@@ -256,11 +277,8 @@ public class SQLService
     public Object retrieve(String table, String column, String primaryKeyColumn, Object primaryKey)
             throws SQLException, IllegalArgumentException
     {
-        //prepare statement
-        statement = DB.prepareStatement("SELECT "+column+" FROM "+table+" WHERE "+primaryKeyColumn+" = ?");
-        statement.setObject(1, primaryKey);
         //execute statement
-        results = statement.executeQuery();
+        results = executeQueryStatement("SELECT "+column+" FROM "+table+" WHERE "+primaryKeyColumn+" = ?", primaryKey);
         
         //return results
         if (results.next())
@@ -268,7 +286,9 @@ public class SQLService
         else
             throw new IllegalArgumentException();
     } 
-//update
+    //</editor-fold>
+    
+    //<editor-fold defaultstate="collapsed" desc="update() functions...">
     /**
      * Update an item from <code>table->column</code>, where the PRIMARY KEY
      * is <code>primaryKey</code>.
@@ -283,12 +303,8 @@ public class SQLService
     public void update(String table, String column, Object primaryKey, Object value)
             throws SQLException
     {
-        //prepare statement
-        statement = DB.prepareStatement("UPDATE "+table+" SET "+column+" = ? WHERE "+getPrimaryKeyName(table)+" = ?");
-        statement.setObject(1, value);
-        statement.setObject(2, primaryKey);
         //execute statement
-        statement.executeUpdate();
+        executeUpdateStatement("UPDATE "+table+" SET "+column+" = ? WHERE "+getPrimaryKeyName(table)+" = ?", value, primaryKey);
     }
     /**
      * Update an item from <code>table->column</code>, where the PRIMARY KEY
@@ -305,14 +321,12 @@ public class SQLService
     public void update(String table, String column, String primaryKeyColumn, Object primaryKey, Object value)
             throws SQLException
     {
-        //prepare statement
-        statement = DB.prepareStatement("UPDATE "+table+" SET "+column+" = ? WHERE "+primaryKeyColumn+" = ?");
-        statement.setObject(1, value);
-        statement.setObject(2, primaryKey);
         //execute statement
-        statement.executeUpdate();
+        executeUpdateStatement("UPDATE "+table+" SET "+column+" = ? WHERE "+primaryKeyColumn+" = ?", value, primaryKey);
     }
-//insert
+    //</editor-fold>
+
+    //<editor-fold defaultstate="collapsed" desc="insert() functions...">
     /**
      * Insert a new row of <code>values</code> into <code>table</code>.
      * The array of values are inserted in the order they are found (index 0 to 
@@ -334,12 +348,8 @@ public class SQLService
             else
                 insertQuery += ("?, ");
         }
-        //prepare statement
-        statement = DB.prepareStatement(insertQuery);
-        for (int i = 0; i < values.length; i++)
-            statement.setObject(i+1, values[i]);
         //execute statement
-        statement.executeUpdate();
+        executeUpdateStatement(insertQuery, values);
     }
     /**
      * Insert a set of <code>values</code> into <code>table</code>.
@@ -364,15 +374,13 @@ public class SQLService
                 else
                     insertQuery += ("?, ");
             }
-            //prepare statement
-            statement = DB.prepareStatement(insertQuery);
-            for (int i = 0; i < values[j].length; i++)
-                statement.setObject(i+1, values[j][i]);
             //execute statement
-            statement.executeUpdate();
+            executeUpdateStatement(insertQuery, values[j]);
         }
     }
-//remove
+    //</editor-fold>
+    
+    //<editor-fold defaultstate="collapsed" desc="remove() functions...">
     /**
      * Remove a row of data from <code>table</code> where <code>query</code> is
      * true. <code>query</code> must be valid SQL syntax, the <code>query</code>
@@ -386,7 +394,7 @@ public class SQLService
      */
     public void remove(String table, String query) throws SQLException
     {
-        statement = DB.prepareStatement("DELETE FROM "+table+" WHERE "+query);
-        statement.executeUpdate();
+        executeUpdateStatement("DELETE FROM "+table+" WHERE "+query);
     }
+    //</editor-fold>
 }
