@@ -7,12 +7,12 @@
  *          - Haven't tested it since creating it
  * @issues  1. getPrimaryKeyName() doesn't work, any function using it won't work.
  */
-package com.xyzdrivers.models;
+package com.xyzdrivers.services;
 
 import java.sql.*;
 import java.util.*;
 
-public class jdbcDriver
+public class SQLService
 {
 //variables
     private Connection DB;
@@ -28,56 +28,13 @@ public class jdbcDriver
      * 
      * @param dbConnection A <code>Connection</code> to the DB being accessed.
      * 
-     * @throws SQLException 
-     * @throws java.lang.ClassNotFoundException 
+     * @throws SQLException
      */
-    public jdbcDriver(Connection dbConnection)
+    public SQLService(Connection dbConnection)
             throws SQLException
     {
         //pass DB connection
         DB = dbConnection;
-        
-        //get database metadata
-        DBMetaData = DB.getMetaData();
-    }
-    
-    /**
-     * Constructor for jdbcDriver.
-     * Attempts to create a <code>Connection</code> with the passed <code>URL</code>, <code>USER</code> and <code>PASS</code>.
-     * 
-     * @param URL URL of the DB to create a Connection to.
-     * 
-     * @throws SQLException 
-     * @throws java.lang.ClassNotFoundException 
-     */
-    public jdbcDriver(String URL)
-            throws SQLException, ClassNotFoundException
-    {
-        //connect to database
-        Class.forName("com.mysql.jdbc.Driver");
-        DB = DriverManager.getConnection(URL);
-        
-        //get database metadata
-        DBMetaData = DB.getMetaData();
-    }
-    
-    /**
-     * Constructor for jdbcDriver.
-     * Attempts to create a <code>Connection</code> with the passed <code>URL</code>, <code>USER</code> and <code>PASS</code>.
-     * 
-     * @param URL URL of the DB to create a Connection to.
-     * @param USER Username to use when creating a Connection to <code>URL</code>.
-     * @param PASS Password of the <code>USER</code>.
-     * 
-     * @throws SQLException 
-     * @throws java.lang.ClassNotFoundException 
-     */
-    public jdbcDriver(String URL, String USER, String PASS)
-            throws SQLException, ClassNotFoundException
-    {
-        //connect to database
-        Class.forName("com.mysql.jdbc.Driver");
-        DB = DriverManager.getConnection(URL, USER, PASS);
         
         //get database metadata
         DBMetaData = DB.getMetaData();

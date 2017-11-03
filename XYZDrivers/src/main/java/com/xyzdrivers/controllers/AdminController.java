@@ -1,11 +1,10 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+/**
+ * @author alex
  */
 package com.xyzdrivers.controllers;
 
-import com.xyzdrivers.models.*;
+import com.xyzdrivers.services.SQLService;
+import com.xyzdrivers.services.MembersService;
 
 import java.io.*;
 import java.sql.*;
@@ -13,25 +12,8 @@ import java.util.*;
 import javax.servlet.*;
 import javax.servlet.http.*;
 
-/**
- *
- * @author arthur
- */
 public class AdminController extends HttpServlet {
 
-    public List<Object[]> getMembersList(jdbcDriver JDBC)
-    {
-        List<Object[]> members = null;
-        
-        try {
-            members = JDBC.retrieve("MEMBERS");
-        } catch (SQLException ex) {
-            System.err.println(ex);
-        }
-        
-        return members;
-    }
-    
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
      * methods.
@@ -46,9 +28,11 @@ public class AdminController extends HttpServlet {
     {
         /* ----- DEBUGGING-start ----- */
         try {
-            jdbcDriver JDBC = null;
-            JDBC = new jdbcDriver("jdbc:derby://localhost:1527/xyzdrivers", "root", "root");
-            List<Object[]> members = getMembersList(JDBC);
+            /* create Connection to DB */
+            Class.forName("com.mysql.jdbc.Driver");
+            SQLService JDBC = new SQLService(DriverManager.getConnection("jdbc:derby://localhost:1527/xyzdrivers", "root", "root"));
+            /* testing getMembersList */
+            List<Object[]> members = MembersService.getMembers(JDBC);
             System.out.println(members.get(0)[2]);
         } catch (SQLException | ClassNotFoundException ex) {
             System.out.println("EXCEPTION: ");
